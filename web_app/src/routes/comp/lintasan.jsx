@@ -87,20 +87,6 @@ const Lintasan = ({ namaLintasan, children }) => {
         {namaLintasan}
       </h1>
 
-      {/* TOMBOL TRIGGER START / STOP */}
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={handleToggleTracking}
-          className={`px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all duration-300 ${
-            isTracking 
-              ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-              : 'bg-green-600 hover:bg-green-700'
-          }`}
-        >
-          {isTracking ? 'STOP LINTASAN' : 'START'}
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6 ">
         
         {/* geo tag info */}
@@ -178,11 +164,31 @@ const Lintasan = ({ namaLintasan, children }) => {
         
         {/* trajectory */}
         <div className="bg-white p-5 rounded-xl shadow">
+
+          {/* TOMBOL TRIGGER START / STOP */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleToggleTracking}
+              className={`px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all duration-300 ${
+                isTracking 
+                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {isTracking ? 'STOP LINTASAN' : 'START'}
+            </button>
+          </div>
           <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
             TRAJECTORY
           </h2>
           <div className="mt-4 flex justify-center">
-            {children}
+            {React.Children.map(children, child => {
+              if (React.isValidElement(child)) {
+                // Mengirimkan logData (array koordinat) ke TrakA.jsx / TrakB.jsx secara otomatis
+                return React.cloneElement(child, { pointsData: logData });
+              }
+              return child;
+            })}
           </div>
         </div>
 
