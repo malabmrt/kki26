@@ -22,7 +22,7 @@ const Lintasan = ({ namaLintasan, children }) => {
 
   // Fungsi untuk mengambil data terbaru dari backend
   const fetchData = () => {
-    fetch("https://kki-back.onrender.com/api/data")
+    fetch("https://kki-back.onrender.com")
       .then((res) => res.json())
       .then((data) => {
         if (data.latest) {
