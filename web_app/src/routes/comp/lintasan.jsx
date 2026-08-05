@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import sbox from '../../assets/sbox.jpg'
-import ubox from '../../assets/ubox.jpg'
 
 const InfoCard = ({ title, value }) => {
   return (
@@ -8,7 +6,7 @@ const InfoCard = ({ title, value }) => {
       <div className="bg-slate-300 rounded-lg text-center font-medium">
         {title}
       </div>
-      <div className="bg-slate-50 p-1 rounded-lg mt-2 text-sm font-bold">
+      <div className="bg-slate-50 p-1 rounded-lg mt-2 text-sm font-bold text-center">
         {value}
       </div>
     </div>
@@ -17,44 +15,124 @@ const InfoCard = ({ title, value }) => {
 
 const Lintasan = ({ namaLintasan, children }) => {
   const [latestData, setLatestData] = useState(null)
-  const [logData, setLogData] = useState([]) // Menyimpan data posisi khusus lintasan aktif
+  const [logData, setLogData] = useState([])
   const [isTracking, setIsTracking] = useState(false)
 
-  // Fungsi untuk mengambil data terbaru dari backend
+  // State untuk melacak gambar yang aktif dan timestamp cache-breaker
+  const [surfaceSrc, setSurfaceSrc] = useState('/public/sbox1.jpg')
+  const [underwaterSrc, setUnderwaterSrc] = useState('/public/ubox1.jpg')
+
+  // State & handler untuk streaming video ROS
+  const STREAM_URL = 'http://192.168.0.104:8080/stream?topic=/camera1/image&type=ros_compressed'
+  const [videoSrc, setVideoSrc] = useState(STREAM_URL)
+  const [isVideoError, setIsVideoError] = useState(false)
+
+  const handleRetryVideo = () => {
+    setIsVideoError(false)
+    // Menambahkan timestamp agar browser memaksa koneksi ulang HTTP stream
+    setVideoSrc(`${STREAM_URL}&t=${new Date().getTime()}`)
+  }
+
+  // Gambar Cadangan (Fallback)
+  const FALLBACK_SURFACE = '/public/surface.jpg'
+  const FALLBACK_UNDERWATER = '/public/underwater.jpg'
+
+  // Header autentikasi Back4app
+  const BACK4APP_HEADERS = {
+    'X-Parse-Application-Id': 'EvdYX9DzGQFfIjgNHLKitEtnPrc6f0Ebo7QkpcoV',
+    'X-Parse-REST-API-Key': 'I5p146Jcbyq1KKQZkLC4y1G4pY0De1RAR9rjUYVz',
+  }
+
+  // --- LOGIKA CEK DUA-DUANYA SECARA OTOMATIS (POLLING) ---
+  useEffect(() => {
+    const checkImages = () => {
+      const timestamp = new Date().getTime()
+
+      // Cek ketersediaan Surface Image (sbox1.jpg)
+      const surfaceUrl = `/public/sbox1.jpg?t=${timestamp}`
+      fetch(surfaceUrl, { method: 'HEAD' })
+        .then((res) => {
+          if (res.ok) {
+            setSurfaceSrc(surfaceUrl)
+          } else {
+            setSurfaceSrc(FALLBACK_SURFACE)
+          }
+        })
+        .catch(() => setSurfaceSrc(FALLBACK_SURFACE))
+
+      // Cek ketersediaan Underwater Image (ubox1.jpg)
+      const underwaterUrl = `/public/ubox1.jpg?t=${timestamp}`
+      fetch(underwaterUrl, { method: 'HEAD' })
+        .then((res) => {
+          if (res.ok) {
+            setUnderwaterSrc(underwaterUrl)
+          } else {
+            setUnderwaterSrc(FALLBACK_UNDERWATER)
+          }
+        })
+        .catch(() => setUnderwaterSrc(FALLBACK_UNDERWATER))
+    }
+
+    // Jalankan cek pertama kali
+    checkImages()
+
+    // Cek ulang setiap 3 detik untuk mendeteksi file baru secara realtime
+    const imageInterval = setInterval(checkImages, 3000)
+
+    return () => clearInterval(imageInterval)
+  }, [])
+
+  // Fungsi fetch data langsung dari Back4app
   const fetchData = () => {
-    fetch("https://kki26-back.onrender.com/api/data")
+    fetch("https://parseapi.back4app.com/classes/backend_trial?order=-createdAt&limit=1", {
+      headers: BACK4APP_HEADERS
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (data.latest) {
-          setLatestData(data.latest)
-          
-          // Memasukkan data baru ke baris paling atas tabel secara berkala
-          setLogData((prevLogs) => {
-            // Validasi agar data dengan ID yang sama tidak duplikat di dalam tabel
-            const isExist = prevLogs.some(log => log._id === data.latest._id);
-            if (isExist) return prevLogs;
-            
-            // Masukkan data baru di awal array (indeks 0)
-            return [data.latest, ...prevLogs];
-          })
+        if (data.results && data.results.length > 0) {
+          const item = data.results[0];
+
+          // Konversi nilai x dan y menjadi Number
+          const parsedItem = {
+            ...item,
+            x: item.x !== undefined ? Number(item.x) : 0,
+            y: item.y !== undefined ? Number(item.y) : 0,
+            SOG_Knot: item.SOG_Knot !== undefined ? Number(item.SOG_Knot) : 0,
+            SOG_kmperhours: item.SOG_kmperhours !== undefined ? Number(item.SOG_kmperhours) : 0,
+            COG: item.COG !== undefined ? Number(item.COG) : 0,
+            Lattitude: item.Lattitude !== undefined ? Number(item.Lattitude) : 0,
+            Longitude: item.Longitude !== undefined ? Number(item.Longitude) : 0,
+            code: item.code || null
+          };
+
+          setLatestData(parsedItem);
+
+          // --- LOGIKA RESET TRAJECTORY & LOG DARI CODE "0125" ---
+          if (parsedItem.code === "0125") {
+            setLogData([parsedItem]);
+          } else {
+            setLogData((prevLogs) => {
+              const isExist = prevLogs.some(log => log.objectId === parsedItem.objectId);
+              if (isExist) return prevLogs;
+              
+              return [parsedItem, ...prevLogs];
+            });
+          }
         }
       })
       .catch((err) => {
-        console.error("Server backend tidak berjalan atau error:", err.message)
-      })
+        console.error("Gagal mengambil data dari Back4app:", err.message);
+      });
   }
 
-  // Handler saat tombol Start / Stop ditekan
   const handleToggleTracking = () => {
     if (!isTracking) {
-      // Jika baru mau START: Reset tabel log posisi agar bersih dari lintasan sebelumnya
       setLogData([])
       setLatestData(null)
     }
     setIsTracking(!isTracking)
   }
 
-  // Effect untuk interval re-fetch data 1 detik sekali
   useEffect(() => {
     let interval = null
     if (isTracking) {
@@ -68,31 +146,51 @@ const Lintasan = ({ namaLintasan, children }) => {
     return () => clearInterval(interval)
   }, [isTracking])
 
-  // Pemetaan Data untuk Geo-Tag Info
   const items = [
-    { title: 'DAY', value: latestData ? latestData.day : '-' },
-    { title: 'DATE', value: latestData ? latestData.date : '-' },
-    { title: 'TIME', value: latestData ? latestData.time : '-' },
-    { title: 'POSITION LOG [X,Y]', value: latestData ? `[${latestData.x.toFixed(2)}, ${latestData.y.toFixed(2)}]` : '-' },
-    { title: 'SOG [KNOT]', value: latestData ? latestData.sog_knot.toFixed(2) : '-' },
-    { title: 'SOG [KM/H]', value: latestData ? latestData.sog_kmh.toFixed(2) : '-' },
-    { title: 'COORDINATE', value: latestData ? latestData.coordinate.toFixed(2) : '-' },
-    { title: 'COG', value: latestData ? latestData.cog.toFixed(2) : '-' },
+    { title: 'DAY', value: latestData?.Day ?? '-' },
+    { title: 'DATE', value: latestData?.Date ?? '-' },
+    { title: 'TIME', value: latestData?.Time ?? '-' },
+    { 
+      title: 'POSITION LOG [X,Y]', 
+      value: (latestData?.x !== undefined && latestData?.y !== undefined) 
+        ? `[${latestData.x.toFixed(1)}, ${latestData.y.toFixed(1)}]` 
+        : '-' 
+    },
+    { title: 'SOG [KNOT]', value: latestData?.SOG_Knot != null ? latestData.SOG_Knot.toFixed(2) : '-' },
+    { title: 'SOG [KM/H]', value: latestData?.SOG_kmperhours != null ? latestData.SOG_kmperhours.toFixed(2) : '-' },
+    { title: 'COORDINATE', value: (latestData?.Lattitude && latestData?.Longitude) ? `${latestData.Lattitude.toFixed(4)}, ${latestData.Longitude.toFixed(4)}` : '-' },
+    { title: 'COG', value: latestData?.COG != null ? latestData.COG.toFixed(2) : '-' },
   ]
 
   return (
     <div className="min-h-screen bg-slate-50 w-full p-5">
-      
       <h1 className='text-4xl font-bold text-black text-center mb-2'>
         {namaLintasan}
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6 ">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6">
         
-        {/* geo tag info */}
+        {/* Kolom 1 */}
         <div className="bg-white p-5 rounded-xl shadow">
+
+          {/* TOMBOL TRIGGER START / STOP */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleToggleTracking}
+              className={`px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all duration-300 ${
+                isTracking 
+                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {isTracking ? 'STOP' : 'START'}
+            </button>
+          </div>
+
+          {/* Geo Tag Info */}
           <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
-            Geo - Tag Info </h2>
+            Geo - Tag Info
+          </h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {items.map((item, index) => (
@@ -100,29 +198,43 @@ const Lintasan = ({ namaLintasan, children }) => {
             ))}
           </div>
             
-          {/* image */}
+          {/* Image */}
           <div>
             <h2 className="text-xl font-semibold mb-4 mt-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
               IMAGE
             </h2>
             <div className="grid grid-cols-2 gap-4 mt-4">
+              
+              {/* Surface Image */}
               <div className="flex flex-col">
                 <div className="flex-1">
-                  <img src={sbox} alt="Surface Box" className="w-full h-80 object-contain bg-slate-100 rounded-lg" />
+                  <img 
+                    src={surfaceSrc} 
+                    onError={() => setSurfaceSrc(FALLBACK_SURFACE)}
+                    alt="Surface Box" 
+                    className="w-full h-80 object-contain bg-slate-100 rounded-lg" 
+                  />
                 </div>
                 <h3 className="text-center bg-slate-200 rounded-lg py-2 font-semibold mt-2">Surface</h3>
               </div>
 
+              {/* Underwater Image */}
               <div className="flex flex-col">
                 <div className="flex-1">
-                  <img src={ubox} alt="Underwater Box" className="w-full h-80 object-contain bg-slate-100 rounded-lg" />
+                  <img 
+                    src={underwaterSrc} 
+                    onError={() => setUnderwaterSrc(FALLBACK_UNDERWATER)}
+                    alt="Underwater Box" 
+                    className="w-full h-80 object-contain bg-slate-100 rounded-lg" 
+                  />
                 </div>
                 <h3 className="text-center bg-slate-200 rounded-lg py-2 font-semibold mt-2">Underwater</h3>
               </div>
+
             </div>
           </div>
 
-          {/* position log */}
+          {/* Position Log Table */}
           <h2 className="text-xl font-semibold mb-4 mt-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
               POSITION LOG
           </h2>
@@ -134,20 +246,20 @@ const Lintasan = ({ namaLintasan, children }) => {
                   <th className="px-3 py-2.5">POSITION [X,Y]</th>
                   <th className="px-3 py-2.5">SOG [KNOT]</th>
                   <th className="px-3 py-2.5">SOG [KM/H]</th>
-                  <th className="px-3 py-2.5">COORDINATE</th>
+                  <th className="px-3 py-2.5">LAT, LONG</th>
                   <th className="px-3 py-2.5">COG</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono text-[11px] text-slate-700">
                   {logData.length > 0 ? (
-                    logData.map((log, index) => (
-                      <tr key={index} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-3 py-2">{log.time}</td>
+                    logData.map((log) => (
+                      <tr key={log.objectId} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-3 py-2">{log.Time}</td>
                         <td className="px-3 py-2">[{log.x?.toFixed(1)}, {log.y?.toFixed(1)}]</td>
-                        <td className="px-3 py-2">{log.sog_knot?.toFixed(2)}</td>
-                        <td className="px-3 py-2">{log.sog_kmh?.toFixed(2)}</td>
-                        <td className="px-3 py-2">{log.coordinate?.toFixed(2)}</td>
-                        <td className="px-3 py-2">{log.cog?.toFixed(2)}</td>
+                        <td className="px-3 py-2">{log.SOG_Knot?.toFixed(2)}</td>
+                        <td className="px-3 py-2">{log.SOG_kmperhours?.toFixed(2)}</td>
+                        <td className="px-3 py-2">{log.Lattitude?.toFixed(4)}, {log.Longitude?.toFixed(4)}</td>
+                        <td className="px-3 py-2">{log.COG?.toFixed(2)}</td>
                       </tr>
                     ))
                   ) : (
@@ -162,34 +274,73 @@ const Lintasan = ({ namaLintasan, children }) => {
           </div>
         </div>
         
-        {/* trajectory */}
-        <div className="bg-white p-5 rounded-xl shadow">
+        {/* Kolom 2 */}
+        <div className="bg-white p-5 rounded-xl shadow flex flex-col">
 
-          {/* TOMBOL TRIGGER START / STOP */}
-          <div className="flex justify-center mb-6">
-            <button
-              onClick={handleToggleTracking}
-              className={`px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all duration-300 ${
-                isTracking 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {isTracking ? 'STOP LINTASAN' : 'START'}
-            </button>
+          {/* AREA STREAMING VIDEO */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
+              VIDEO STREAMING
+            </h2>
+            <div className="w-full h-64 bg-slate-900 rounded-lg flex items-center justify-center text-white relative overflow-hidden">
+              {!isVideoError ? (
+                <img
+                  src={videoSrc}
+                  alt="Live Camera Feed"
+                  className="w-full h-full object-contain"
+                  onError={() => setIsVideoError(true)}
+                  onLoad={() => setIsVideoError(false)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-4 text-center">
+                  <span className="text-red-400 font-medium mb-1">
+                    Gagal terhubung ke Kamera ROS
+                  </span>
+                  <span className="text-xs text-slate-400 mb-3">
+                    Pastikan ROS video server di IP 192.168.43.225:8080 aktif
+                  </span>
+                  <button
+                    onClick={handleRetryVideo}
+                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow transition-colors"
+                  >
+                    Coba Hubungkan Ulang
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
-            TRAJECTORY
-          </h2>
-          <div className="mt-4 flex justify-center">
-            {React.Children.map(children, child => {
-              if (React.isValidElement(child)) {
-                // Mengirimkan logData (array koordinat) ke TrakA.jsx / TrakB.jsx secara otomatis
-                return React.cloneElement(child, { pointsData: logData });
-              }
-              return child;
-            })}
-          </div>
+
+          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1"> */}
+            
+            {/* CHECKPOINT
+            <div className="md:col-span-1 flex flex-col">
+              <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
+                CHECKPOINT
+              </h2>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex-1 overflow-y-auto">
+                <p className="text-xs text-slate-500 text-center">
+                  Detail Checkpoint...
+                </p>
+              </div>
+            </div> */}
+
+            {/* TRAJECTORY */}
+            <div className="md:col-span-3 flex flex-col overflow-hidden">
+              <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
+                TRAJECTORY
+              </h2>
+              <div className="flex justify-center items-center flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2 overflow-hidden w-full relative">
+                {React.Children.map(children, child => {
+                  if (React.isValidElement(child)) {
+                    return React.cloneElement(child, { pointsData: logData });
+                  }
+                  return child;
+                })}
+              </div>
+            </div>
+
+          {/* </div> */}
+
         </div>
 
       </div>

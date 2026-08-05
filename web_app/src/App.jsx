@@ -4,6 +4,7 @@ import logobmrt from './assets/bmrt.png';
 import logopolbat from './assets/polbat.png';
 import LintasanA from './routes/LintasanA';
 import LintasanB from './routes/LintasanB';
+import Kolsu from './routes/Kolsu';
 
 function App(){
   return (
@@ -44,7 +45,7 @@ function App(){
         <Routes>
           <Route path="/Lintasan A" element={<LintasanA />}/>
           <Route path="/Lintasan B" element={<LintasanB />}/>
-
+          <Route path="/Kolsu" element={<Kolsu />}/>
         </Routes>
       </div>
     </>

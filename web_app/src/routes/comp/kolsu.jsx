@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 
-function TrakA({ pointsData = [] }) {
+function Kolsucanvas({ pointsData = [] }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -14,18 +14,16 @@ function TrakA({ pointsData = [] }) {
     const graphWidth = width - padding;
     const graphHeight = height - padding;
 
-    // reset trajectory
+    // Reset trajectory & canvas
     ctx.clearRect(0, 0, width, height);
 
-    const maxValue = 3100;
-    const stepValue = 300;
+    const maxValue = 1750;
+    const stepValue = 250;
     const scale = graphWidth / maxValue;
 
-    // grid
+    // Grid Vertikal
     ctx.strokeStyle = "#bab7b7";
     ctx.lineWidth = 1;
-
-    //vertikal
     for (let x = 0; x <= maxValue; x += stepValue) {
       const px = padding + x * scale;
       ctx.beginPath(); 
@@ -34,7 +32,7 @@ function TrakA({ pointsData = [] }) {
       ctx.stroke();
     }
 
-    //Horizontal
+    // Grid Horizontal
     for (let y = 0; y <= maxValue; y += stepValue) {
       const py = graphHeight - y * scale;
       ctx.beginPath(); 
@@ -43,23 +41,23 @@ function TrakA({ pointsData = [] }) {
       ctx.stroke();
     }
 
-    // sumbu
+    // Sumbu X & Y
     ctx.strokeStyle = "black";
     ctx.lineWidth = 2;
 
-    // x
+    // Sumbu X
     ctx.beginPath(); 
     ctx.moveTo(padding, graphHeight); 
     ctx.lineTo(width, graphHeight); 
     ctx.stroke();
 
-    // y
+    // Sumbu Y
     ctx.beginPath(); 
     ctx.moveTo(padding, 0); 
     ctx.lineTo(padding, graphHeight); 
     ctx.stroke();
 
-    // label x
+    // Label X
     ctx.fillStyle = "black";
     ctx.font = "10px Arial";
     ctx.textAlign = "center";
@@ -69,7 +67,7 @@ function TrakA({ pointsData = [] }) {
       ctx.fillText(x, px, graphHeight + 8);
     }
 
-    //label y
+    // Label Y
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     for (let y = stepValue; y <= maxValue; y += stepValue) {
@@ -77,78 +75,11 @@ function TrakA({ pointsData = [] }) {
       ctx.fillText(y, padding - 8, py);
     }
 
-    // ball
-    const greenPoints = [
-      { x: 2690, y: 970}, 
-      { x: 2580, y: 1300}, 
-      { x: 2720, y: 1570},
+    // Trajectory Drawing (Hanya Menampilkan Garis Ungu Dinamis)
+    const startX = 875;
+    const startY = 100;
 
-      { x: 1800, y: 2450}, 
-      { x: 1630, y: 2450}, 
-      { x: 1460, y: 2450}, 
-      { x: 1290, y: 2450},
-
-      { x: 320, y: 1800}, 
-      { x: 180, y: 1500}, 
-      { x: 150, y: 1200},            
-    ];
-
-    const redPoints = [
-      { x: 2390, y: 970}, 
-      { x: 2280, y: 1300}, 
-      { x: 2420, y: 1570},
-
-      { x: 1800, y: 2150}, 
-      { x: 1630, y: 2150}, 
-      { x: 1460, y: 2150}, 
-      { x: 1290, y: 2150}, 
-
-      { x: 620, y: 1800}, 
-      { x: 480, y: 1500}, 
-      { x: 450, y: 1200}, 
-    ];
-
-    const bluePoints = [
-      {x: 2470, y: 300}, 
-      {x: 2470, y: 225}, 
-      {x: 2470, y: 150},
-    ];
-
-    const drawStatic = (points, color, size) => {
-      ctx.fillStyle = color;
-      points.forEach(p => {
-        const px = padding + p.x * scale;
-        const py = graphHeight - p.y * scale;
-        ctx.beginPath(); ctx.arc(px, py, size, 0, Math.PI * 2); ctx.fill();
-      });
-    };
-    drawStatic(greenPoints, "green", 5);
-    drawStatic(redPoints, "red", 5);
-    drawStatic(bluePoints, "blue", 3);
-
-    // surface dan underwater box; docking
-    const boxes = [
-      { x: 530, y: 620, color: "blue", width: 30, height: 15 },
-      { x: 830, y: 320, color: "green", width: 30, height: 15 },
-      { x: 2550, y: 225, color: "#b9b5b5", width: 20, height: 40 }
-    ];
-
-    boxes.forEach(box => {
-      const px = padding + box.x * scale;
-      const py = graphHeight - box.y * scale;
-      ctx.fillStyle = box.color;
-      ctx.fillRect(
-        px - box.width / 2, 
-        py - box.height / 2, 
-        box.width, 
-        box.height);
-    });
-
-  // trajectori drawing
-  const startX = 2550;
-  const startY = 225;
-
-  if (pointsData.length > 0) {
+    if (pointsData.length > 0) {
       ctx.strokeStyle = "purple"; // Warna garis lintasan dinamis
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -175,9 +106,9 @@ function TrakA({ pointsData = [] }) {
 
   return (
     <div style={{ textAlign: "center" }}>
-      <canvas ref={canvasRef} width={880} height={780} />
+      <canvas ref={canvasRef} width={800} height={800} />
     </div>
   );
 }
 
-export default TrakA;
+export default Kolsucanvas;

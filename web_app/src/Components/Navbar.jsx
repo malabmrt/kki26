@@ -32,6 +32,19 @@ const Navbar = () => {
                                 >
                     Lintasan B
                 </NavLink>
+
+                <NavLink 
+                    to="/Kolsu" 
+                    className={({ isActive }) =>
+                        `py-1 px-3 text-sm ${
+                        isActive 
+                            ? "font-bold text-red-500 bg-slate-300" 
+                            : "font-light text-white hover:text-sky-300"
+                        } rounded-xl transition duration-300`
+                    }
+                                >
+                    Kolsu
+                </NavLink>
             </div>
         </nav>
     </>
