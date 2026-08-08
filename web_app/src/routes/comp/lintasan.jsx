@@ -34,8 +34,8 @@ const Lintasan = ({ namaLintasan, children }) => {
   }
 
   // Gambar Cadangan (Fallback)
-  const FALLBACK_SURFACE = '/public/surface.jpg'
-  const FALLBACK_UNDERWATER = '/public/underwater.jpg'
+  const FALLBACK_SURFACE = '/surface.jpg'
+  const FALLBACK_UNDERWATER = '/underwater.jpg'
 
   // Header autentikasi Back4app
   const BACK4APP_HEADERS = {
@@ -49,7 +49,7 @@ const Lintasan = ({ namaLintasan, children }) => {
       const timestamp = new Date().getTime()
 
       // Cek ketersediaan Surface Image (sbox1.jpg)
-      const surfaceUrl = `/public/sbox1.jpg?t=${timestamp}`
+      const surfaceUrl = `/sbox1.jpg?t=${timestamp}`
       fetch(surfaceUrl, { method: 'HEAD' })
         .then((res) => {
           if (res.ok) {
@@ -61,7 +61,7 @@ const Lintasan = ({ namaLintasan, children }) => {
         .catch(() => setSurfaceSrc(FALLBACK_SURFACE))
 
       // Cek ketersediaan Underwater Image (ubox1.jpg)
-      const underwaterUrl = `/public/ubox1.jpg?t=${timestamp}`
+      const underwaterUrl = `/ubox1.jpg?t=${timestamp}`
       fetch(underwaterUrl, { method: 'HEAD' })
         .then((res) => {
           if (res.ok) {
