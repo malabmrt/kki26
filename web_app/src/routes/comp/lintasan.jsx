@@ -294,10 +294,7 @@ const Lintasan = ({ namaLintasan, children }) => {
               ) : (
                 <div className="flex flex-col items-center justify-center p-4 text-center">
                   <span className="text-red-400 font-medium mb-1">
-                    Gagal terhubung ke Kamera ROS
-                  </span>
-                  <span className="text-xs text-slate-400 mb-3">
-                    Pastikan ROS video server di IP 192.168.43.225:8080 aktif
+                    Gagal terhubung ke Kamera
                   </span>
                   <button
                     onClick={handleRetryVideo}
@@ -310,9 +307,9 @@ const Lintasan = ({ namaLintasan, children }) => {
             </div>
           </div>
 
-          {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1"> */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
             
-            {/* CHECKPOINT
+            {/* CHECKPOINT */}
             <div className="md:col-span-1 flex flex-col">
               <h2 className="text-xl font-semibold mb-4 bg-blue-500 text-white py-3 rounded-lg text-center w-full">
                 CHECKPOINT
@@ -322,7 +319,7 @@ const Lintasan = ({ namaLintasan, children }) => {
                   Detail Checkpoint...
                 </p>
               </div>
-            </div> */}
+            </div>
 
             {/* TRAJECTORY */}
             <div className="md:col-span-3 flex flex-col overflow-hidden">
@@ -339,7 +336,7 @@ const Lintasan = ({ namaLintasan, children }) => {
               </div>
             </div>
 
-          {/* </div> */}
+          </div>
 
         </div>
 
