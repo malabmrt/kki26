@@ -39,8 +39,8 @@ const Lintasan = ({ namaLintasan, children }) => {
 
   // Header autentikasi Back4app
   const BACK4APP_HEADERS = {
-    'X-Parse-Application-Id': 'EvdYX9DzGQFfIjgNHLKitEtnPrc6f0Ebo7QkpcoV',
-    'X-Parse-REST-API-Key': 'I5p146Jcbyq1KKQZkLC4y1G4pY0De1RAR9rjUYVz',
+    'X-Parse-Application-Id': 'dUP2XE7bPBGnpz1rRT9fWlVvf1XZ9D0ukkpsxhLv',
+    'X-Parse-REST-API-Key': 'DZbe1lu0xVOeBniJD04FCXRTyN50EVsavJLRuwJS',
   }
 
   // --- LOGIKA CEK DUA-DUANYA SECARA OTOMATIS (POLLING) ---
@@ -84,7 +84,7 @@ const Lintasan = ({ namaLintasan, children }) => {
 
   // Fungsi fetch data langsung dari Back4app
   const fetchData = () => {
-    fetch("https://parseapi.back4app.com/classes/backend_trial?order=-createdAt&limit=1", {
+    fetch("https://parseapi.back4app.com/classes/nirmala?order=-createdAt&limit=1", {
       headers: BACK4APP_HEADERS
     })
       .then((res) => res.json())
