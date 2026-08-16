@@ -23,7 +23,7 @@ const Lintasan = ({ namaLintasan, children }) => {
   const [underwaterSrc, setUnderwaterSrc] = useState('/public/ubox1.jpg')
 
   // State & handler untuk streaming video ROS
-  const STREAM_URL = 'http://192.168.0.104:8080/stream?topic=/camera1/image&type=ros_compressed'
+  const STREAM_URL = 'http://192.168.2.101:8080/stream?topic=/camera1/image&type=ros_compressed'
   const [videoSrc, setVideoSrc] = useState(STREAM_URL)
   const [isVideoError, setIsVideoError] = useState(false)
 

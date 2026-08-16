@@ -33,7 +33,7 @@ const Navbar = () => {
                     Lintasan B
                 </NavLink>
 
-                <NavLink 
+                {/* <NavLink 
                     to="/Kolsu" 
                     className={({ isActive }) =>
                         `py-1 px-3 text-sm ${
@@ -44,7 +44,7 @@ const Navbar = () => {
                     }
                                 >
                     Kolsu
-                </NavLink>
+                </NavLink> */}
             </div>
         </nav>
     </>
